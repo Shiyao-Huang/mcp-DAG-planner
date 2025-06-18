@@ -10,7 +10,7 @@ import socket
 
 
 def find_free_port(
-    start_port: int = 8765, max_attempts: int = 100, preferred_port: int = 8765
+    start_port: int = 9005, max_attempts: int = 100, preferred_port: int = 9005
 ) -> int:
     """
     尋找可用的端口，優先使用偏好端口
@@ -26,7 +26,7 @@ def find_free_port(
     Raises:
         RuntimeError: 如果找不到可用端口
     """
-    # 首先嘗試偏好端口（通常是 8765）
+    # 首先嘗試偏好端口（DAG Planner 專用 9005）
     if is_port_available("127.0.0.1", preferred_port):
         return preferred_port
 

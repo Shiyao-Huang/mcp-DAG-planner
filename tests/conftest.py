@@ -93,7 +93,7 @@ def test_config() -> dict[str, Any]:
     return {
         "timeout": 30,
         "debug": True,
-        "web_port": 8765,
+        "web_port": 9005,
         "test_summary": "測試摘要 - 這是一個自動化測試",
         "test_feedback": "這是測試回饋內容",
     }

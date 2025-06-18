@@ -145,7 +145,7 @@ class PortManager:
 
     @staticmethod
     def find_free_port_enhanced(
-        preferred_port: int = 8765,
+        preferred_port: int = 9005,
         auto_cleanup: bool = True,
         host: str = "127.0.0.1",
         max_attempts: int = 100,

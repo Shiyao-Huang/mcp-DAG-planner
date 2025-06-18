@@ -128,8 +128,9 @@ def test_web_ui_simple():
 
         # 設置測試模式，禁用自動清理避免權限問題
         os.environ["MCP_TEST_MODE"] = "true"
-        # 設置更高的端口範圍避免系統保留端口
-        os.environ["MCP_WEB_PORT"] = "9765"
+        # 設置 DAG Planner 專用端口：Web UI 使用 9005，Server 使用 9004
+        os.environ["MCP_WEB_PORT"] = "9005"
+        os.environ["MCP_SERVER_PORT"] = "9004"
 
         print("🔧 創建 Web UI 管理器...")
         manager = WebUIManager(host="127.0.0.1")  # 使用動態端口分配
