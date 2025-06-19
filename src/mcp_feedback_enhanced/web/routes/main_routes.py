@@ -393,38 +393,167 @@ def setup_routes(manager: "WebUIManager"):
 
     @manager.app.get("/api/active-tabs")
     async def get_active_tabs():
-        """獲取活躍標籤頁信息 - 優先使用全局狀態"""
-        current_time = time.time()
-        expired_threshold = 60
+        """獲取活躍標籤頁列表 - 用於調試"""
+        try:
+            tab_data = []
+            active_tabs_file = Path.home() / ".config" / "mcp-feedback-enhanced" / "active_tabs.json"
 
-        # 清理過期的全局標籤頁
-        valid_global_tabs = {}
-        for tab_id, tab_info in manager.global_active_tabs.items():
-            if current_time - tab_info.get("last_seen", 0) <= expired_threshold:
-                valid_global_tabs[tab_id] = tab_info
+            if active_tabs_file.exists():
+                with open(active_tabs_file, encoding="utf-8") as f:
+                    data = json.load(f)
+                    tab_data = data.get("tabs", [])
 
-        manager.global_active_tabs = valid_global_tabs
+            return JSONResponse(content={"tabs": tab_data, "count": len(tab_data)})
+        except Exception as e:
+            debug_log(f"獲取活躍標籤頁失敗: {e}")
+            return JSONResponse(
+                status_code=500, content={"error": f"獲取活躍標籤頁失敗: {str(e)}"}
+            )
 
-        # 如果有當前會話，也更新會話的標籤頁狀態
-        current_session = manager.get_current_session()
-        if current_session:
-            # 合併會話標籤頁到全局（如果有的話）
-            session_tabs = getattr(current_session, "active_tabs", {})
-            for tab_id, tab_info in session_tabs.items():
-                if current_time - tab_info.get("last_seen", 0) <= expired_threshold:
-                    valid_global_tabs[tab_id] = tab_info
-
-            # 更新會話的活躍標籤頁
-            current_session.active_tabs = valid_global_tabs.copy()
-            manager.global_active_tabs = valid_global_tabs
-
-        return JSONResponse(
-            content={
-                "has_session": current_session is not None,
-                "active_tabs": valid_global_tabs,
-                "count": len(valid_global_tabs),
+    @manager.app.get("/api/dag-data")
+    async def get_dag_data(project_path: str = ""):
+        """直接读取.EDATA目录下的DAG数据，不依赖MCP工具"""
+        try:
+            import datetime
+            from pathlib import Path
+            
+            # 动态确定项目路径 - 优先级：参数 -> 会话 -> 当前目录 -> 递归查找
+            if not project_path:
+                # 首先尝试从当前会话获取项目路径
+                current_session = manager.get_current_session()
+                if current_session and hasattr(current_session, 'project_directory'):
+                    session_project_path = current_session.project_directory
+                    debug_log(f"🔍 会话项目路径: {session_project_path}")
+                    
+                    # 检查会话路径是否已经指向.EDATA目录
+                    if session_project_path.endswith('.EDATA'):
+                        # 如果是.EDATA目录，则回退到父目录
+                        project_path = Path(session_project_path).parent
+                        debug_log(f"🔄 .EDATA路径回退到: {project_path}")
+                    else:
+                        project_path = session_project_path
+                        debug_log(f"✅ 使用会话项目路径: {project_path}")
+                else:
+                    # 如果没有会话路径，使用当前工作目录
+                    project_path = Path.cwd()
+                    debug_log(f"🔄 使用当前工作目录: {project_path}")
+            
+            current_path = Path(project_path).resolve()
+            
+            # 尝试多个可能的.EDATA路径
+            possible_edata_paths = [
+                current_path / ".EDATA" / "dags",  # 当前目录
+                current_path.parent / ".EDATA" / "dags",  # 父目录
+                Path("/Users/swmt/Desktop/hsy/大模型/MCP-some/.EDATA/dags"),  # 绝对路径
+            ]
+            
+            dags_path = None
+            for path in possible_edata_paths:
+                if path.exists():
+                    dags_path = path
+                    debug_log(f"✅ 找到DAG目录: {dags_path}")
+                    break
+            
+            if not dags_path:
+                # 尝试创建目录
+                default_path = current_path / ".EDATA" / "dags"
+                default_path.mkdir(parents=True, exist_ok=True)
+                dags_path = default_path
+                debug_log(f"📁 创建新的DAG目录: {dags_path}")
+            
+            debug_log(f"正在读取DAG数据from: {dags_path}")
+            
+            if not dags_path.exists():
+                return JSONResponse(content={
+                    "success": True,
+                    "project_path": str(current_path),
+                    "dags_directory": str(dags_path),
+                    "dags": {},
+                    "summary": {
+                        "total_files": 0,
+                        "layers_found": [],
+                        "layer_counts": {}
+                    },
+                    "message": "DAG目录不存在，尚未创建任何DAG",
+                    "last_scan": datetime.datetime.now().isoformat()
+                })
+            
+            # 扫描DAG文件
+            dag_files = {}
+            
+            # 按层分类收集DAG文件
+            for json_file in dags_path.glob("*.json"):
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        dag_data = json.load(f)
+                    
+                    layer_type = dag_data.get("layer_type", "unknown")
+                    
+                    if layer_type not in dag_files:
+                        dag_files[layer_type] = []
+                    
+                    # 标准化数据结构，确保前端能正确访问
+                    standardized_dag_data = {
+                        "file_name": json_file.name,
+                        "file_path": str(json_file),
+                        "layer_type": layer_type,
+                        "layer_name": dag_data.get("layer_name", f"{layer_type.title()} Layer"),
+                        "timestamp": dag_data.get("input_data", {}).get("timestamp", ""),
+                        "file_size": json_file.stat().st_size,
+                        "created_time": datetime.datetime.fromtimestamp(json_file.stat().st_ctime).isoformat(),
+                        # 重要：确保dag_data结构包含input_data
+                        "dag_data": {
+                            "input_data": dag_data.get("input_data", {}),
+                            "layer_type": layer_type,
+                            "layer_name": dag_data.get("layer_name", ""),
+                            "parsed_dag": dag_data.get("parsed_dag", {}),
+                            "validation": dag_data.get("validation", {}),
+                            # 如果有直接的节点和边数据，也包含进来
+                            "nodes": dag_data.get("parsed_dag", {}).get("nodes", []),
+                            "edges": dag_data.get("parsed_dag", {}).get("edges", [])
+                        }
+                    }
+                    
+                    dag_files[layer_type].append(standardized_dag_data)
+                    
+                except Exception as e:
+                    debug_log(f"读取DAG文件失败 {json_file}: {e}")
+                    continue
+            
+            # 按时间排序每个层的文件
+            for layer in dag_files:
+                dag_files[layer].sort(key=lambda x: x["timestamp"], reverse=True)
+            
+            # 统计信息
+            total_files = sum(len(files) for files in dag_files.values())
+            
+            result = {
+                "success": True,
+                "project_path": str(current_path),
+                "dags_directory": str(dags_path),
+                "dags": dag_files,
+                "summary": {
+                    "total_files": total_files,
+                    "layers_found": list(dag_files.keys()),
+                    "layer_counts": {layer: len(files) for layer, files in dag_files.items()}
+                },
+                "last_scan": datetime.datetime.now().isoformat()
             }
-        )
+            
+            debug_log(f"成功读取 {total_files} 个DAG文件，涵盖 {len(dag_files)} 个层级")
+            return JSONResponse(content=result)
+            
+        except Exception as e:
+            error_message = f"读取DAG数据失败: {str(e)}"
+            debug_log(error_message)
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "error": error_message,
+                    "project_path": project_path if 'project_path' in locals() else ""
+                }
+            )
 
     @manager.app.post("/api/register-tab")
     async def register_tab(request: Request):

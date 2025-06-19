@@ -1,0 +1,25 @@
+{
+  "project_name": "mcp-DAG-planner",
+  "created_at": "2025-06-18T20:35:14.333777",
+  "dag_storage": {
+    "base_path": "/Users/swmt/Desktop/hsy/大模型/MCP-some/mcp-DAG-planner/dag_data",
+    "dags_path": "/Users/swmt/Desktop/hsy/大模型/MCP-some/mcp-DAG-planner/dag_data/dags",
+    "backups_path": "/Users/swmt/Desktop/hsy/大模型/MCP-some/mcp-DAG-planner/dag_data/backups",
+    "temp_path": "/Users/swmt/Desktop/hsy/大模型/MCP-some/mcp-DAG-planner/dag_data/temp"
+  },
+  "memory_layer": {
+    "current_session": null,
+    "last_active_dag": null,
+    "layer_status": {
+      "function": "not_started",
+      "logic": "not_started",
+      "code": "not_started",
+      "order": "not_started"
+    }
+  },
+  "settings": {
+    "auto_backup": true,
+    "debug_mode": true,
+    "max_backup_files": 10
+  }
+}

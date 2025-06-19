@@ -325,7 +325,7 @@ class WebUIManager:
                 self._merge_tabs_to_global(self.current_session.active_tabs)
 
             # 同步清理會話資源（但保留 WebSocket 連接）
-            self.current_session._cleanup_sync()
+            self.current_session._cleanup_sync_enhanced(CleanupReason.EXPIRED)
 
         session_id = str(uuid.uuid4())
         session = WebFeedbackSession(session_id, project_directory, summary)
@@ -1070,7 +1070,7 @@ def get_web_ui_manager() -> WebUIManager:
 
 
 async def launch_web_feedback_ui(
-    project_directory: str, summary: str, timeout: int = 600
+    project_directory: str, summary: str, timeout: int = 120
 ) -> dict:
     """
     啟動 Web 回饋介面並等待用戶回饋 - 重構為使用根路徑
@@ -1142,6 +1142,19 @@ def stop_web_ui():
         _web_ui_manager.stop()
         _web_ui_manager = None
         debug_log("Web UI 服務已停止")
+
+
+async def send_dag_update(data: dict):
+    """
+    向所有連接的前端發送DAG更新
+    """
+    manager = get_web_ui_manager()
+    if manager:
+        debug_log(f"發送 DAG 更新: {data.get('layer')}")
+        await manager.broadcast_to_active_tabs({
+            "type": "dag_update",
+            "data": data
+        })
 
 
 # 測試用主函數

@@ -334,7 +334,7 @@ class WebFeedbackSession:
         )
         return stats
 
-    async def wait_for_feedback(self, timeout: int = 600) -> dict[str, Any]:
+    async def wait_for_feedback(self, timeout: int = 120) -> dict[str, Any]:
         """
         等待用戶回饋，包含圖片，支援超時自動清理
 
@@ -370,14 +370,15 @@ class WebFeedbackSession:
                     "images": self.images,
                     "settings": self.settings,
                 }
-            # 超時了，立即清理資源
-            debug_log(
-                f"會話 {self.session_id} 在 {actual_timeout} 秒後超時，開始清理資源..."
-            )
-            await self._cleanup_resources_on_timeout()
-            raise TimeoutError(
-                f"等待用戶回饋超時（{actual_timeout}秒），介面已自動關閉"
-            )
+            else:
+                # 超時了，立即清理資源
+                debug_log(
+                    f"會話 {self.session_id} 在 {actual_timeout} 秒後超時，開始清理資源..."
+                )
+                await self._cleanup_resources_on_timeout()
+                raise TimeoutError(
+                    f"等待用戶回饋超時（{actual_timeout}秒），介面已自動關閉"
+                )
 
         except Exception as e:
             # 任何異常都要確保清理資源

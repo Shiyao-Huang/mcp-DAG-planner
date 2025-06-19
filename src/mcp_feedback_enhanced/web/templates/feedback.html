@@ -387,6 +387,183 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+
+        /* ===== DAG可视化相关样式 ===== */
+        .dag-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toolbar-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar-section h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .dag-input-section {
+            margin-bottom: 20px;
+        }
+
+        .dag-input-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .dag-input-controls select {
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .dag-visualization-section {
+            margin-bottom: 20px;
+        }
+
+        .dag-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dag-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .dag-info-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .dag-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .dag-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* DAG层级控制面板样式 */
+        .dag-layer-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dag-layer-controls select {
+            margin-bottom: 10px;
+            width: 150px;
+        }
+
+        .dag-layer-controls button {
+            margin-right: 5px;
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            border: 1px solid;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .dag-layer-controls button:hover {
+            opacity: 0.8;
+        }
+
+        /* DAG节点样式 */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            opacity: 0.8;
+        }
+
+        .node-highlighted rect {
+            stroke-width: 4 !important;
+            filter: drop-shadow(0 0 6px rgba(74, 144, 226, 0.5));
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .dag-toolbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .dag-input-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .dag-info-section {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .dag-stats {
+                justify-content: center;
+            }
+
+            .dag-container {
+                height: 400px;
+            }
+        }
     </style>
 </head>
 <body class="layout-{{ layout_mode }}">
@@ -493,6 +670,9 @@
                     <button class="tab-button" data-tab="command" data-i18n="tabs.command">
                         ⚡ 命令
                     </button>
+                    <button class="tab-button" data-tab="dag" data-i18n="tabs.dag">
+                        🎨 四层DAG
+                    </button>
                     <button class="tab-button" data-tab="sessions" data-i18n="tabs.sessions">
                         📋 會話管理
                     </button>
@@ -546,6 +726,103 @@
                         </div>
                         <button id="runCommandBtn" class="btn btn-primary" data-i18n="command.runButton" style="white-space: nowrap;">
                             ▶️ 執行
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 四层DAG可视化分页 ===== -->
+            <div id="tab-dag" class="tab-content">
+                <div class="section-description" data-i18n="dag.description">
+                    四层DAG可视化系统：功能层(What) → 逻辑层(How) → 代码层(Code) → 排序层(When)。支持Mermaid格式输入，ReactFlow渲染，DAGRE自动布局。
+                </div>
+
+                <!-- DAG工具栏 -->
+                <div class="dag-toolbar">
+                    <div class="toolbar-section">
+                        <h3>🎨 四层DAG可视化</h3>
+                    </div>
+                    <div class="toolbar-section">
+                        <button id="loadTestDAG" class="btn btn-secondary">
+                            📥 加载示例
+                        </button>
+                        <button id="saveDAG" class="btn btn-primary">
+                            💾 保存DAG
+                        </button>
+                        <button id="load-test-data-btn" class="btn btn-accent">
+                            📤 加载测试数据
+                        </button>
+                        <button id="exportDAG" class="btn btn-accent">
+                            📤 导出
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DAG输入区域 -->
+                <div class="dag-input-section">
+                    <div class="input-group">
+                        <label class="input-label">Mermaid DAG 输入</label>
+                        <div class="dag-input-controls">
+                            <select id="dagLayerSelect" class="form-select">
+                                <option value="function">功能层 (What)</option>
+                                <option value="logic">逻辑层 (How)</option>
+                                <option value="code">代码层 (Code)</option>
+                                <option value="order">排序层 (When)</option>
+                            </select>
+                            <button id="loadDAGBtn" class="btn btn-primary">加载到DAG</button>
+                        </div>
+                        <textarea
+                            id="dagMermaidInput"
+                            class="text-input"
+                            placeholder="请输入Mermaid格式的DAG定义，例如：
+
+graph TD
+    A[用户需求分析] --> B[功能规格定义]
+    B --> C[用户界面设计]
+    C --> D[数据模型设计]
+    D --> E[API接口规划]
+    E --> F[系统集成规划]"
+                            style="min-height: 150px; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 14px;"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- DAG可视化容器 -->
+                <div class="dag-visualization-section">
+                    <div id="dag-container" class="dag-container">
+                        <!-- DAG可视化内容将在这里动态生成 -->
+                        <div class="dag-loading">
+                            <div class="loading-text">🎨 初始化DAG可视化系统...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DAG信息面板 -->
+                <div class="dag-info-section">
+                    <div class="dag-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">功能层节点:</span>
+                            <span id="functionNodesCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">逻辑层节点:</span>
+                            <span id="logicNodesCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">代码层节点:</span>
+                            <span id="codeNodesCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">排序层节点:</span>
+                            <span id="orderNodesCount" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="dag-actions">
+                        <button id="callMCPTools" class="btn btn-success">
+                            🚀 调用MCP构建工具
+                        </button>
+                        <button id="clearDAG" class="btn btn-danger">
+                            🗑️ 清空DAG
                         </button>
                     </div>
                 </div>
@@ -1077,6 +1354,10 @@
     <script src="/static/js/modules/audio/audio-manager.js?v=2025010510"></script>
     <script src="/static/js/modules/audio/audio-settings-ui.js?v=2025010510"></script>
 
+    <!-- DAG可视化模組 -->
+    <script src="/static/js/modules/dag-visualization/dag-manager.js?v=2025010510"></script>
+    <script src="/static/js/modules/dag-visualization/dag-controller.js?v=2025010510"></script>
+
     <!-- 其他模組 -->
     <script src="/static/js/modules/utils.js?v=2025010510"></script>
     <script src="/static/js/modules/tab-manager.js?v=2025010510"></script>
@@ -1114,7 +1395,10 @@
                 'MCPFeedback.StatusUtils',
                 'MCPFeedback.ConnectionMonitor',
                 'MCPFeedback.SessionManager',
-                'MCPFeedback.FeedbackApp'
+                'MCPFeedback.FeedbackApp',
+                'MCPFeedback.DAG',
+                'MCPFeedback.DAG.DAGManager',
+                'MCPFeedback.DAG.DAGController'
             ];
 
             const missingModules = requiredModules.filter(modulePath => {
@@ -1156,6 +1440,11 @@
                 if (window.feedbackApp.sessionManager) {
                     window.MCPFeedback.app = window.feedbackApp;
                 }
+
+                // 初始化DAG控制器
+                logger.debug('初始化 DAGController...');
+                window.dagController = new window.MCPFeedback.DAG.DAGController();
+                await window.dagController.init();
 
                 // 初始化完成後，立即渲染現有的 AI 摘要內容為 Markdown
                 setTimeout(function() {

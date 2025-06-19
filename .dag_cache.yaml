@@ -1,0 +1,18 @@
+created_at: '2025-06-18T21:25:30.526359'
+last_active_project: MCP-some
+projects:
+  MCP-some:
+    access_count: 7
+    added_at: '2025-06-18T21:31:16.983566'
+    config_file: /Users/swmt/Desktop/hsy/大模型/MCP-some/.EDATA/config.json
+    description: 4层DAG构建系统测试项目
+    edata_path: /Users/swmt/Desktop/hsy/大模型/MCP-some/.EDATA
+    is_valid: true
+    last_accessed: '2025-06-18T21:31:16.983573'
+    path: /Users/swmt/Desktop/hsy/大模型/MCP-some
+settings:
+  auto_detect: true
+  cache_ttl_hours: 24
+  max_projects: 50
+updated_at: '2025-06-18T21:31:16.984014'
+version: 1.0.0

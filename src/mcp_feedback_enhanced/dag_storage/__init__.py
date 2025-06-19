@@ -41,14 +41,17 @@ graph TD
 - StateRecovery: 状态恢复管理器
 """
 
-from .execution_state_manager import ExecutionStateManager
+# 只导入已实现的模块
 from .dag_data_storage import DAGDataStorage
-from .version_control import VersionControl
-from .state_recovery import StateRecovery
+
+# 暂时注释掉未实现的模块
+# from .execution_state_manager import ExecutionStateManager
+# from .version_control import VersionControl
+# from .state_recovery import StateRecovery
 
 __all__ = [
-    'ExecutionStateManager',
-    'DAGDataStorage', 
-    'VersionControl',
-    'StateRecovery'
+    'DAGDataStorage'
+    # 'ExecutionStateManager',
+    # 'VersionControl',
+    # 'StateRecovery'
 ] 

@@ -16,7 +16,7 @@ class TestData:
         "project_directory": "/test/project",
         "summary": "測試 AI 工作摘要 - 已完成代碼重構",
         "status": "waiting",
-        "timeout": 600
+        "timeout": 120
     }
 
     # 測試回饋數據
